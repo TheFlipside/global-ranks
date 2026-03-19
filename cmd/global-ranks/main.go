@@ -68,7 +68,7 @@ func main() {
 	// Middleware chain: recovery → logging → per-IP rate limit → router.
 	var h http.Handler = mux
 	h = middleware.PerIPRateLimit(generalRL, cfg.TrustedProxies)(h)
-	h = middleware.Logging(h)
+	h = middleware.Logging(cfg.TrustedProxies)(h)
 	h = middleware.Recovery(h)
 
 	srv := &http.Server{

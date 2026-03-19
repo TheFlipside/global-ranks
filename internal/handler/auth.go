@@ -27,12 +27,8 @@ func (d *Deps) authenticateRequest(w http.ResponseWriter, r *http.Request) (uuid
 	}
 
 	valid, err := model.ValidateToken(r.Context(), d.DB, uid, token)
-	if err != nil {
-		writeError(w, http.StatusUnauthorized, "user not found")
-		return uuid.Nil, false
-	}
-	if !valid {
-		writeError(w, http.StatusUnauthorized, "invalid token")
+	if err != nil || !valid {
+		writeError(w, http.StatusUnauthorized, "invalid credentials")
 		return uuid.Nil, false
 	}
 

@@ -58,7 +58,7 @@ case "$EXT" in
         run_if_available gofmt && {
             GOFMT_OUT=$(gofmt -l "$FILE")
             if [[ -n "$GOFMT_OUT" ]]; then
-                echo "  gofmt: $FILE needs formatting (run: gofmt -w $FILE)"
+                echo "  gofmt: $FILE needs formatting (run: gofmt -w \"$FILE\")"
             fi
         } || true
         # go vet needs the whole package, so run from the module root

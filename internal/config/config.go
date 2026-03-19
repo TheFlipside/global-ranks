@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log/slog"
 	"net"
 	"os"
 	"strconv"
@@ -56,6 +57,7 @@ func parseCIDRs(raw string) []*net.IPNet {
 		}
 		_, cidr, err := net.ParseCIDR(s)
 		if err != nil {
+			slog.Warn("ignoring invalid CIDR in GR_TRUSTED_PROXIES", "value", s, "error", err)
 			continue
 		}
 		nets = append(nets, cidr)
@@ -76,6 +78,7 @@ func envInt(key string, fallback int) int {
 		if err == nil {
 			return n
 		}
+		slog.Warn("invalid integer for env var, using fallback", "key", key, "value", v, "fallback", fallback)
 	}
 	return fallback
 }
@@ -86,6 +89,7 @@ func envFloat(key string, fallback float64) float64 {
 		if err == nil {
 			return f
 		}
+		slog.Warn("invalid float for env var, using fallback", "key", key, "value", v, "fallback", fallback)
 	}
 	return fallback
 }

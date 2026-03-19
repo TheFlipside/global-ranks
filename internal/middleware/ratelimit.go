@@ -10,6 +10,10 @@ import (
 	"golang.org/x/time/rate"
 )
 
+// maxLimiters caps the number of per-key rate limiters to prevent
+// memory exhaustion from distributed attacks with many unique keys.
+const maxLimiters = 100000
+
 type limiterEntry struct {
 	limiter  *rate.Limiter
 	lastSeen time.Time
@@ -40,6 +44,10 @@ func (rl *RateLimiter) Allow(key string) bool {
 	rl.mu.Lock()
 	entry, ok := rl.limiters[key]
 	if !ok {
+		if len(rl.limiters) >= maxLimiters {
+			rl.mu.Unlock()
+			return false
+		}
 		entry = &limiterEntry{
 			limiter: rate.NewLimiter(rl.rps, rl.burst),
 		}
@@ -114,10 +122,12 @@ func extractIP(r *http.Request, trusted []*net.IPNet) string {
 		candidate := strings.TrimSpace(parts[i])
 		ip := net.ParseIP(candidate)
 		if ip == nil {
+			// Skip non-IP values (hostnames, garbage) to prevent
+			// injection of arbitrary strings as rate-limit keys.
 			continue
 		}
 		if !isTrusted(ip, trusted) {
-			return candidate
+			return ip.String()
 		}
 	}
 

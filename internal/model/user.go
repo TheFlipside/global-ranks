@@ -6,6 +6,7 @@ import (
 	"crypto/subtle"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	mathrand "math/rand/v2"
 	"time"
@@ -58,12 +59,18 @@ func GetUser(ctx context.Context, db *sql.DB, id uuid.UUID) (*User, error) {
 }
 
 // ValidateToken checks whether the given token matches the stored token for the user.
+// It always performs a constant-time comparison to prevent timing side-channels
+// that could reveal whether a UUID is registered.
 func ValidateToken(ctx context.Context, db *sql.DB, id uuid.UUID, token string) (bool, error) {
 	var storedToken string
 	err := db.QueryRowContext(ctx,
 		`SELECT secret_token FROM users WHERE uuid = $1`, id,
 	).Scan(&storedToken)
-	if err != nil {
+	if errors.Is(err, sql.ErrNoRows) {
+		// Use a dummy value so the comparison always runs in constant time,
+		// preventing attackers from distinguishing "user not found" via timing.
+		storedToken = "0000000000000000000000000000000000000000000000000000000000000000"
+	} else if err != nil {
 		return false, fmt.Errorf("validate token: %w", err)
 	}
 	return subtle.ConstantTimeCompare([]byte(storedToken), []byte(token)) == 1, nil

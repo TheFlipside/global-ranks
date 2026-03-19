@@ -40,11 +40,11 @@ func (d *Deps) Register(w http.ResponseWriter, r *http.Request) {
 
 	exists, err := model.UserExists(ctx, d.DB, uid)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "database error")
+		writeError(w, http.StatusInternalServerError, "registration failed")
 		return
 	}
 	if exists {
-		writeError(w, http.StatusConflict, "user already registered")
+		writeError(w, http.StatusConflict, "registration failed")
 		return
 	}
 
