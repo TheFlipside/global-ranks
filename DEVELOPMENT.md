@@ -23,7 +23,9 @@ GR_DB_DSN="postgres://localhost/globalranks?sslmode=disable" make run
 3.1 Test
 
 curl localhost:8080/api/v1/health
-curl -X POST localhost:8080/api/v1/scores \
+
+curl -X POST localhost:8080/api/v1/register \
   -H 'Content-Type: application/json' \
-  -d '{"uuid":"550e8400-e29b-41d4-a716-446655440000","game_slug":"demo","score":1000}'
+  -d '{"uuid":"550e8400-e29b-41d4-a716-446655440000"}'
+
 curl localhost:8080/api/v1/games/demo/leaderboard
