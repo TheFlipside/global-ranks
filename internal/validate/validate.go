@@ -6,6 +6,7 @@ import (
 )
 
 var usernamePattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{3,32}$`)
+var gameSlugPattern = regexp.MustCompile(`^[a-z0-9_-]{1,64}$`)
 
 // Score checks that a score value is within acceptable bounds.
 func Score(score, maxScore int64) error {
@@ -26,10 +27,10 @@ func Username(name string) error {
 	return nil
 }
 
-// GameSlug checks that a game slug is non-empty and reasonable.
+// GameSlug checks that a game slug matches the allowed format.
 func GameSlug(slug string) error {
-	if len(slug) == 0 || len(slug) > 64 {
-		return fmt.Errorf("game slug must be 1-64 characters")
+	if !gameSlugPattern.MatchString(slug) {
+		return fmt.Errorf("game slug must be 1-64 lowercase alphanumeric, hyphens, or underscores")
 	}
 	return nil
 }

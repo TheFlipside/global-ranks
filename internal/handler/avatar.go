@@ -5,6 +5,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/google/uuid"
+
 	"global-ranks/internal/identicon"
 )
 
@@ -50,8 +52,8 @@ func (d *Deps) AvatarHandler() http.HandlerFunc {
 		raw := r.PathValue("id")
 		uid := strings.TrimSuffix(raw, ".png")
 
-		if uid == "" {
-			writeError(w, http.StatusBadRequest, "missing uuid")
+		if _, err := uuid.Parse(uid); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid uuid")
 			return
 		}
 

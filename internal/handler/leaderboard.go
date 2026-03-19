@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"global-ranks/internal/model"
+	"global-ranks/internal/validate"
 )
 
 type leaderboardResponse struct {
@@ -20,8 +21,8 @@ type leaderboardResponse struct {
 // GetLeaderboard handles GET /api/v1/games/{slug}/leaderboard.
 func (d *Deps) GetLeaderboard(w http.ResponseWriter, r *http.Request) {
 	slug := r.PathValue("slug")
-	if slug == "" {
-		writeError(w, http.StatusBadRequest, "missing game slug")
+	if err := validate.GameSlug(slug); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 

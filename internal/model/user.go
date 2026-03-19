@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
@@ -65,7 +66,7 @@ func ValidateToken(ctx context.Context, db *sql.DB, id uuid.UUID, token string) 
 	if err != nil {
 		return false, fmt.Errorf("validate token: %w", err)
 	}
-	return storedToken == token, nil
+	return subtle.ConstantTimeCompare([]byte(storedToken), []byte(token)) == 1, nil
 }
 
 // UpdateUsername changes a user's display name.

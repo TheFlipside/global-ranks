@@ -59,7 +59,8 @@ Auth: `X-User-UUID` + `X-Auth-Token` headers on protected endpoints.
 
 `GR_DB_DSN`, `GR_PORT` (8080), `GR_RATE_SCORE_PER_SEC` (0.2),
 `GR_RATE_SCORE_BURST` (3), `GR_RATE_GENERAL_PER_SEC` (10),
-`GR_RATE_GENERAL_BURST` (30), `GR_MAX_SCORE` (999999999)
+`GR_RATE_GENERAL_BURST` (30), `GR_MAX_SCORE` (999999999),
+`GR_TRUSTED_PROXIES` (empty — comma-separated CIDRs, e.g. `127.0.0.1,::1`)
 
 ## Project-Specific Rules
 

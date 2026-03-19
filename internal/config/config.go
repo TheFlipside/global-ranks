@@ -1,8 +1,10 @@
 package config
 
 import (
+	"net"
 	"os"
 	"strconv"
+	"strings"
 )
 
 // Config holds all server configuration loaded from environment variables.
@@ -15,6 +17,7 @@ type Config struct {
 	RateGeneralBurst int
 	AvatarCacheSize  int
 	MaxScore         int64
+	TrustedProxies   []*net.IPNet
 }
 
 // Load reads configuration from environment variables with sensible defaults.
@@ -28,7 +31,36 @@ func Load() Config {
 		RateGeneralBurst:  envInt("GR_RATE_GENERAL_BURST", 30),
 		AvatarCacheSize:   envInt("GR_AVATAR_CACHE_SIZE", 1000),
 		MaxScore:          int64(envInt("GR_MAX_SCORE", 999999999)),
+		TrustedProxies:    parseCIDRs(envStr("GR_TRUSTED_PROXIES", "")),
 	}
+}
+
+// parseCIDRs splits a comma-separated list of CIDRs into []*net.IPNet.
+// Single IPs without a mask (e.g. "127.0.0.1") are treated as /32 or /128.
+func parseCIDRs(raw string) []*net.IPNet {
+	if raw == "" {
+		return nil
+	}
+	var nets []*net.IPNet
+	for _, s := range strings.Split(raw, ",") {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			continue
+		}
+		if !strings.Contains(s, "/") {
+			if strings.Contains(s, ":") {
+				s += "/128"
+			} else {
+				s += "/32"
+			}
+		}
+		_, cidr, err := net.ParseCIDR(s)
+		if err != nil {
+			continue
+		}
+		nets = append(nets, cidr)
+	}
+	return nets
 }
 
 func envStr(key, fallback string) string {

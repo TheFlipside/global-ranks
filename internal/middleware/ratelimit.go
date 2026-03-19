@@ -3,6 +3,7 @@ package middleware
 import (
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -66,10 +67,11 @@ func (rl *RateLimiter) cleanup() {
 }
 
 // PerIPRateLimit applies a general per-IP rate limit to all requests.
-func PerIPRateLimit(rl *RateLimiter) func(http.Handler) http.Handler {
+// trustedProxies defines CIDRs whose X-Forwarded-For header is trusted.
+func PerIPRateLimit(rl *RateLimiter, trustedProxies []*net.IPNet) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ip := extractIP(r)
+			ip := extractIP(r, trustedProxies)
 			if !rl.Allow(ip) {
 				w.Header().Set("Content-Type", "application/json")
 				w.Header().Set("Retry-After", "5")
@@ -82,13 +84,51 @@ func PerIPRateLimit(rl *RateLimiter) func(http.Handler) http.Handler {
 	}
 }
 
-func extractIP(r *http.Request) string {
-	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
-		return forwarded
-	}
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
+// extractIP returns the client IP for rate limiting.
+// If the request comes from a trusted proxy, the rightmost untrusted IP
+// in X-Forwarded-For is used. Otherwise, RemoteAddr is returned directly.
+func extractIP(r *http.Request, trusted []*net.IPNet) string {
+	remoteHost, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		return r.RemoteAddr
+		remoteHost = r.RemoteAddr
 	}
-	return host
+
+	if len(trusted) == 0 {
+		return remoteHost
+	}
+
+	remoteIP := net.ParseIP(remoteHost)
+	if remoteIP == nil || !isTrusted(remoteIP, trusted) {
+		return remoteHost
+	}
+
+	forwarded := r.Header.Get("X-Forwarded-For")
+	if forwarded == "" {
+		return remoteHost
+	}
+
+	// Walk the chain from right to left, skipping trusted proxy IPs.
+	// The first non-trusted IP is the real client.
+	parts := strings.Split(forwarded, ",")
+	for i := len(parts) - 1; i >= 0; i-- {
+		candidate := strings.TrimSpace(parts[i])
+		ip := net.ParseIP(candidate)
+		if ip == nil {
+			continue
+		}
+		if !isTrusted(ip, trusted) {
+			return candidate
+		}
+	}
+
+	return remoteHost
+}
+
+func isTrusted(ip net.IP, nets []*net.IPNet) bool {
+	for _, n := range nets {
+		if n.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
