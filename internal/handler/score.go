@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -12,9 +13,8 @@ import (
 )
 
 type submitScoreRequest struct {
-	UUID     string `json:"uuid"`
-	GameSlug string `json:"game_slug"`
-	Score    int64  `json:"score"`
+	SessionID string `json:"session_id"`
+	Score     int64  `json:"score"`
 }
 
 type submitScoreResponse struct {
@@ -23,16 +23,27 @@ type submitScoreResponse struct {
 }
 
 // SubmitScore handles POST /api/v1/scores.
+// Requires authentication and a valid, unused session.
 func (d *Deps) SubmitScore(w http.ResponseWriter, r *http.Request) {
+	uid, ok := d.authenticateRequest(w, r)
+	if !ok {
+		return
+	}
+
 	var req submitScoreRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
-	uid, err := uuid.Parse(req.UUID)
+	sessionID, err := uuid.Parse(req.SessionID)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid uuid")
+		writeError(w, http.StatusBadRequest, "invalid session_id")
+		return
+	}
+
+	if err := validate.Score(req.Score, d.Cfg.MaxScore); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -43,39 +54,35 @@ func (d *Deps) SubmitScore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := validate.GameSlug(req.GameSlug); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	if err := validate.Score(req.Score, d.Cfg.MaxScore); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
 	ctx := r.Context()
 
-	// Auto-create user on first score submission.
-	exists, err := model.UserExists(ctx, d.DB, uid)
+	session, err := model.GetSession(ctx, d.DB, sessionID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "database error")
-		return
-	}
-	if !exists {
-		if _, err := model.CreateUser(ctx, d.DB, uid); err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to create user")
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "session not found")
 			return
 		}
-	}
-
-	// Get or create the game.
-	game, err := model.GetOrCreateGame(ctx, d.DB, req.GameSlug)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to resolve game")
+		writeError(w, http.StatusInternalServerError, "failed to fetch session")
 		return
 	}
 
-	id, rank, err := model.SubmitScore(ctx, d.DB, uid, game.ID, req.Score)
+	if session.UserUUID != uid {
+		writeError(w, http.StatusForbidden, "session does not belong to this user")
+		return
+	}
+
+	if session.Used {
+		writeError(w, http.StatusConflict, "session already used")
+		return
+	}
+
+	// Atomically mark session as used (guards against race conditions).
+	if err := model.MarkSessionUsed(ctx, d.DB, sessionID); err != nil {
+		writeError(w, http.StatusConflict, "session already used")
+		return
+	}
+
+	id, rank, err := model.SubmitScore(ctx, d.DB, uid, session.GameID, req.Score)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to submit score")
 		return
@@ -92,4 +99,3 @@ func GetUserUUID(r *http.Request) (uuid.UUID, error) {
 	}
 	return uuid.Parse(raw)
 }
-

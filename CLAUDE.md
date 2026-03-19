@@ -45,11 +45,15 @@ make lint   # runs: go vet && staticcheck
 ## API Endpoints (base: /api/v1)
 
 - `GET  /health` — health + DB ping
-- `POST /scores` — submit score (auto-creates user)
+- `POST /register` — register new user, returns secret token (once)
+- `POST /sessions` — start game session (auth required)
+- `POST /scores` — submit score for a session (auth required)
 - `GET  /games/{slug}/leaderboard` — paginated best-per-user
-- `GET  /users/{uuid}` — user profile
-- `PATCH /users/{uuid}` — update username
+- `GET  /users/{uuid}` — user profile (public)
+- `PATCH /users/{uuid}` — update username (auth required, own UUID only)
 - `GET  /avatars/{uuid}.png` — deterministic identicon
+
+Auth: `X-User-UUID` + `X-Auth-Token` headers on protected endpoints.
 
 ## Configuration (env vars)
 
@@ -61,8 +65,10 @@ make lint   # runs: go vet && staticcheck
 
 - Server is publicly available, expect many client connections.
 - Rate limiting is dual-layer: per-IP (general) + per-UUID (score submissions).
-- Games are auto-created on first score submission for that slug.
-- Users are auto-created on first score submission with random username.
+- Games are auto-created on first session creation for that slug.
+- Users register via POST /register, which returns a secret token (once).
+- Score submission requires a single-use game session for anti-manipulation.
+- Token auth (X-User-UUID + X-Auth-Token) protects score, session, and username endpoints.
 
 ## Skills Available
 

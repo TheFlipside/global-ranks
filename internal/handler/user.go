@@ -51,10 +51,21 @@ func (d *Deps) GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateUser handles PATCH /api/v1/users/{uuid}.
+// Requires authentication. The authenticated user must match the path UUID.
 func (d *Deps) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	authUID, ok := d.authenticateRequest(w, r)
+	if !ok {
+		return
+	}
+
 	uid, err := GetUserUUID(r)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid uuid")
+		return
+	}
+
+	if authUID != uid {
+		writeError(w, http.StatusForbidden, "cannot update another user")
 		return
 	}
 

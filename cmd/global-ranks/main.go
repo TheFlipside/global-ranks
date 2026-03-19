@@ -57,6 +57,8 @@ func main() {
 		w.Write([]byte(`{"status":"ok","db":"ok"}`))
 	})
 
+	mux.HandleFunc("POST /api/v1/register", deps.Register)
+	mux.HandleFunc("POST /api/v1/sessions", deps.CreateSession)
 	mux.HandleFunc("POST /api/v1/scores", deps.SubmitScore)
 	mux.HandleFunc("GET /api/v1/games/{slug}/leaderboard", deps.GetLeaderboard)
 	mux.HandleFunc("GET /api/v1/users/{uuid}", deps.GetUser)
