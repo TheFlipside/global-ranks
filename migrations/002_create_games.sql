@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS games (
+    id         SERIAL PRIMARY KEY,
+    slug       VARCHAR(64) NOT NULL UNIQUE,
+    name       VARCHAR(128) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

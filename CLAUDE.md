@@ -1,61 +1,68 @@
-# Project: GlobalRanks
+# Project: Global-Ranks
 
 ## What This Project Does
 
-This project implements a platform which stores data related to unique user IDs,
-mainly targeted as a global game leaderboard.
-
-### Architecture
-
-The core is a PostgreSQL database.
-
-As backend a service written in Go handles the communication between clients and
-the database.
-Clients which connect to the server are added to the database, together with
-a randomly generated username.
-For a visual enhancement a user avatar is also generated, using a Identicon
-algorithm to generate an image by using the UUID for example.
-
-On client side an implementation is needed which:
-
-- Generates a random UUID and stores it locally on the client.
-- Checks upon start if a UUID already exists.
-- Communicates with the server on a specific event, mainly when submitting a new
-  game score, using the UUID.
-- Receives a list of scores from the server to display it together with user
-  names and avatars.
-- Allows the user to edit the assigned username bound to the UUID.
-
-On the server side multiple endpoints need to be available:
-
-- Send the current data containing a list of scores.
-- Accept data sent by clients to process, both for new scores or changes to the
-  user ID.
-
-Various checks need to be implemented on the server to prevent tampering or
-other malicious actions.
-
-- Sanity checks for submitted scores, e.g. no negative values.
-- Rate limit how often a given user ID (and IP) can submit scores
-  (e.g. 1 per N seconds, with a small burst window).
-  To throttle bots and blind POST spam.
+Multi-game leaderboard platform. Go backend + PostgreSQL. Clients identify via UUID,
+submit scores, fetch leaderboards, edit usernames. Server generates identicon avatars.
 
 ## Stack
 
+- **Language:** Go 1.22+ (uses net/http routing patterns)
 - **Database:** PostgreSQL
-- **Backend Language:** Go
+- **Build:** `make build`
+- **Key deps:** pgx/v5, google/uuid, x/time/rate (3 external only)
+
+## Directory Layout
+
+```text
+cmd/global-ranks/main.go     → Entry point, wiring, graceful shutdown
+internal/config/              → Env-var configuration
+internal/database/            → DB connection pool, migration runner
+internal/handler/             → HTTP handlers (score, leaderboard, user, avatar)
+internal/middleware/           → Logging, recovery, rate limiting
+internal/model/               → Data structs + DB queries
+internal/identicon/           → SHA256-based identicon PNG generator
+internal/validate/            → Input validation (scores, usernames)
+migrations/                   → Embedded SQL schema migrations
+```
 
 ## Essential Commands
 
 ```bash
+# Build
+make build
+
+# Run
+GR_DB_DSN="postgres://user:pass@localhost/globalranks" make run
+
+# Test
+make test
+
 # Lint (must pass before committing)
-golangci-lint run
+make lint   # runs: go vet && staticcheck
 ```
+
+## API Endpoints (base: /api/v1)
+
+- `GET  /health` — health + DB ping
+- `POST /scores` — submit score (auto-creates user)
+- `GET  /games/{slug}/leaderboard` — paginated best-per-user
+- `GET  /users/{uuid}` — user profile
+- `PATCH /users/{uuid}` — update username
+- `GET  /avatars/{uuid}.png` — deterministic identicon
+
+## Configuration (env vars)
+
+`GR_DB_DSN`, `GR_PORT` (8080), `GR_RATE_SCORE_PER_SEC` (0.2),
+`GR_RATE_SCORE_BURST` (3), `GR_RATE_GENERAL_PER_SEC` (10),
+`GR_RATE_GENERAL_BURST` (30), `GR_MAX_SCORE` (999999999)
 
 ## Project-Specific Rules
 
-The server will be publicly available and is expected to receive many client
-connections.
+- Server is publicly available, expect many client connections.
+- Rate limiting is dual-layer: per-IP (general) + per-UUID (score submissions).
+- Games are auto-created on first score submission for that slug.
+- Users are auto-created on first score submission with random username.
 
 ## Skills Available
 
