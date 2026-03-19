@@ -21,7 +21,7 @@ If the distribution ships an older version, install from <https://go.dev/dl/> in
 
 ```bash
 cd /tmp
-git clone https://github.com/your-org/global-ranks.git
+git clone https://git.fiedler.live/tux/global-ranks.git
 cd global-ranks
 make build
 ```

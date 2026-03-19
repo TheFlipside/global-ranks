@@ -37,3 +37,16 @@ other malicious actions.
 - Rate limit how often a given user ID (and IP) can submit scores
   (e.g. 1 per N seconds, with a small burst window).
   To throttle bots and blind POST spam.
+
+## Installation
+
+For the installation on a server see the instructions in INSTALLATION.md
+
+## API
+
+For information about how to implement the communication in a client system, see
+API.md
+
+## Development
+
+See DEVELOPMENT.md for instructions how to set up a testing environment.
