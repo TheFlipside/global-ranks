@@ -82,6 +82,10 @@ func (d *Deps) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	u, err := model.UpdateUsername(r.Context(), d.DB, uid, req.Username)
 	if err != nil {
+		if errors.Is(err, model.ErrUsernameTaken) {
+			writeError(w, http.StatusConflict, "username already taken")
+			return
+		}
 		if errors.Is(err, sql.ErrNoRows) {
 			writeError(w, http.StatusNotFound, "user not found")
 			return

@@ -12,7 +12,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 )
+
+// ErrUsernameTaken is returned when a username is already in use.
+var ErrUsernameTaken = errors.New("username already taken")
 
 // User represents a registered player.
 type User struct {
@@ -77,6 +81,7 @@ func ValidateToken(ctx context.Context, db *sql.DB, id uuid.UUID, token string) 
 }
 
 // UpdateUsername changes a user's display name.
+// Returns ErrUsernameTaken if the username is already in use.
 func UpdateUsername(ctx context.Context, db *sql.DB, id uuid.UUID, username string) (*User, error) {
 	u := &User{UUID: id, Username: username}
 	err := db.QueryRowContext(ctx,
@@ -86,6 +91,10 @@ func UpdateUsername(ctx context.Context, db *sql.DB, id uuid.UUID, username stri
 		username, id,
 	).Scan(&u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return nil, ErrUsernameTaken
+		}
 		return nil, fmt.Errorf("update username: %w", err)
 	}
 	return u, nil
