@@ -187,12 +187,13 @@ curl -X POST https://your-domain.com/api/v1/register \
 To deploy a new version:
 
 ```bash
+sudo systemctl stop global-ranks
 cd /tmp/global-ranks
 git pull
 make build
 sudo cp bin/global-ranks /opt/global-ranks/
 sudo cp migrations/*.sql /opt/global-ranks/migrations/
-sudo systemctl restart global-ranks
+sudo systemctl start global-ranks
 ```
 
 New migrations are applied automatically on startup.
