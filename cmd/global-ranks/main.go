@@ -65,9 +65,10 @@ func main() {
 	mux.HandleFunc("PATCH /api/v1/users/{uuid}", deps.UpdateUser)
 	mux.HandleFunc("GET /api/v1/avatars/{id}", deps.AvatarHandler())
 
-	// Middleware chain: recovery → logging → per-IP rate limit → router.
+	// Middleware chain: recovery → logging → CORS → per-IP rate limit → router.
 	var h http.Handler = mux
 	h = middleware.PerIPRateLimit(generalRL, cfg.TrustedProxies)(h)
+	h = middleware.CORS(cfg.CORSOrigin)(h)
 	h = middleware.Logging(cfg.TrustedProxies)(h)
 	h = middleware.Recovery(h)
 

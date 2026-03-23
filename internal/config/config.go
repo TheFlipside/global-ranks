@@ -19,6 +19,7 @@ type Config struct {
 	AvatarCacheSize  int
 	MaxScore         int64
 	TrustedProxies   []*net.IPNet
+	CORSOrigin       string
 }
 
 // Load reads configuration from environment variables with sensible defaults.
@@ -33,6 +34,7 @@ func Load() Config {
 		AvatarCacheSize:   envInt("GR_AVATAR_CACHE_SIZE", 1000),
 		MaxScore:          int64(envInt("GR_MAX_SCORE", 999999999)),
 		TrustedProxies:    parseCIDRs(envStr("GR_TRUSTED_PROXIES", "")),
+		CORSOrigin:        envStr("GR_CORS_ORIGIN", ""),
 	}
 }
 

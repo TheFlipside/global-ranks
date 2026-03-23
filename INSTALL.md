@@ -87,6 +87,7 @@ GR_TRUSTED_PROXIES="127.0.0.1,::1"
 # GR_RATE_GENERAL_BURST=30
 # GR_MAX_SCORE=999999999
 # GR_AVATAR_CACHE_SIZE=1000
+# GR_CORS_ORIGIN=https://example.com
 EOF
 
 sudo chmod 600 /etc/default/global-ranks
