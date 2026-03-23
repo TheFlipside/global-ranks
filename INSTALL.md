@@ -40,6 +40,12 @@ sudo cp migrations/*.sql /opt/global-ranks/migrations/
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin globalranks
 ```
 
+Set the directory permissions for the service user:
+
+```bash
+sudo chown -R globalranks /opt/global-ranks/
+```
+
 ## 4. Set up PostgreSQL
 
 Switch to the 'postgres' user and create the database and role:
