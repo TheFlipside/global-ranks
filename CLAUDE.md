@@ -61,7 +61,10 @@ Auth: `X-User-UUID` + `X-Auth-Token` headers on protected endpoints.
 `GR_RATE_SCORE_BURST` (3), `GR_RATE_GENERAL_PER_SEC` (10),
 `GR_RATE_GENERAL_BURST` (30), `GR_MAX_SCORE` (999999999),
 `GR_TRUSTED_PROXIES` (empty — comma-separated CIDRs, e.g. `127.0.0.1,::1`),
-`GR_CORS_ORIGIN` (empty — allowed origin for CORS, e.g. `https://example.com`)
+`GR_CORS_ORIGIN` (empty — comma-separated allowlist of browser origins, e.g.
+`https://a.example,https://b.example`; empty emits no CORS headers. Each
+listed origin is matched against the request `Origin` and echoed back
+individually. Only affects browser JS clients; non-browser clients ignore CORS)
 
 ## Project-Specific Rules
 

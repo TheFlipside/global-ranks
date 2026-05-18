@@ -87,7 +87,8 @@ GR_TRUSTED_PROXIES="127.0.0.1,::1"
 # GR_RATE_GENERAL_BURST=30
 # GR_MAX_SCORE=999999999
 # GR_AVATAR_CACHE_SIZE=1000
-# GR_CORS_ORIGIN=https://example.com
+# Comma-separated allowlist of browser origins (empty = no CORS headers):
+# GR_CORS_ORIGIN=https://game1.example,https://game2.example
 EOF
 
 sudo chmod 600 /etc/default/global-ranks
